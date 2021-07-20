@@ -8,13 +8,7 @@ namespace App\Machine;
  */
 interface PurchaseTransactionInterface
 {
-    /**
-     * @return integer
-     */
-    public function getItemQuantity();
-
-    /**
-     * @return float
-     */
-    public function getPaidAmount();
+    public function getItemQuantity(): int;
+    public function getPaidAmount(): float;
+    public function getItemPrice(): float;
 }

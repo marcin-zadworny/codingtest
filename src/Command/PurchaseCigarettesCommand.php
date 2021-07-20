@@ -2,6 +2,10 @@
 
 namespace App\Command;
 
+use App\Machine\CigaretteMachine;
+use App\Machine\PurchasedItemInterface;
+use App\Machine\CigarettePurchaseTransaction;
+use App\Machine\Validator\InsufficientAmountException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputArgument;
@@ -14,43 +18,50 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class PurchaseCigarettesCommand extends Command
 {
-    /**
-     * @return void
-     */
-    protected function configure()
+    private const PURCHASE_MSG = 'You bought <info>%d</info> packs of cigarettes for <info>%01.2f</info>, each for <info>%01.2f</info>.';
+    private const CHANGE_MSG = 'Your change is:';
+
+    protected function configure(): void
     {
         $this->addArgument('packs', InputArgument::REQUIRED, "How many packs do you want to buy?");
         $this->addArgument('amount', InputArgument::REQUIRED, "The amount in euro.");
     }
 
-    /**
-     * @param InputInterface   $input
-     * @param OutputInterface $output
-     *
-     * @return int|null|void
-     */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): void
     {
         $itemCount = (int) $input->getArgument('packs');
-        $amount = (float) \str_replace(',', '.', $input->getArgument('amount'));
+        $amount = (float) str_replace(',', '.', $input->getArgument('amount'));
 
+        try {
+            $cigaretteMachine = new CigaretteMachine();
+            $purchase = $cigaretteMachine->execute(new CigarettePurchaseTransaction($itemCount, $amount));
 
-        // $cigaretteMachine = new CigaretteMachine();
-        // ...
+            $this->printPurchaseSummary($output, $purchase);
+            $this->printChangeInfo($output, $purchase);
+        } catch (InsufficientAmountException $exception) {
+            $output->writeln($exception->getMessage());
+        }
+    }
 
-        $output->writeln('You bought <info>...</info> packs of cigarettes for <info>...</info>, each for <info>...</info>. ');
-        $output->writeln('Your change is:');
+    private function printPurchaseSummary(OutputInterface $output, PurchasedItemInterface $purchase): void
+    {
+        $output->writeln(sprintf(
+                self::PURCHASE_MSG,
+                $purchase->getItemQuantity(),
+                $purchase->getTotalAmount(),
+                CigarettePurchaseTransaction::ITEM_PRICE)
+        );
+    }
+
+    private function printChangeInfo(OutputInterface $output, PurchasedItemInterface $purchase): void
+    {
+        $output->writeln(self::CHANGE_MSG);
 
         $table = new Table($output);
         $table
             ->setHeaders(array('Coins', 'Count'))
-            ->setRows(array(
-                // ...
-                array('0.02', '0'),
-                array('0.01', '0'),
-            ))
+            ->setRows($purchase->getChange()->toNative())
         ;
         $table->render();
-
     }
 }

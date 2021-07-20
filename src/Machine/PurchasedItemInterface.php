@@ -2,31 +2,15 @@
 
 namespace App\Machine;
 
+use App\Machine\Domain\Change;
+
 /**
  * Interface PurchasedItemInterface
  * @package App\Machine
  */
 interface PurchasedItemInterface
 {
-    /**
-     * @return integer
-     */
-    public function getItemQuantity();
-
-    /**
-     * @return float
-     */
-    public function getTotalAmount();
-
-    /**
-     * Returns the change in this format:
-     *
-     * Coin Count
-     * 0.01 0
-     * 0.02 0
-     * .... .....
-     *
-     * @return array
-     */
-    public function getChange();
+    public function getItemQuantity(): int;
+    public function getTotalAmount(): float;
+    public function getChange(): Change;
 }
